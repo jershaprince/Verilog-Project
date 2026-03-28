@@ -1,0 +1,62 @@
+module kogge_stone_adder #(parameter N = 8)(
+    input  [N-1:0] A,
+    input  [N-1:0] B,
+    input          Cin,
+    output [N-1:0] Sum,
+    output         Cout
+);
+
+    // Propagate & Generate
+    wire [N-1:0] P, G;
+
+    assign P = A ^ B;
+    assign G = A & B;
+
+    // Prefix tree arrays
+    wire [N-1:0] P_stage [0:$clog2(N)];
+    wire [N-1:0] G_stage [0:$clog2(N)];
+
+    assign P_stage[0] = P;
+    assign G_stage[0] = G;
+
+    genvar i, j;
+
+    // Kogge–Stone Prefix Tree
+    generate
+        for (i = 1; i <= $clog2(N); i = i + 1) begin : stage
+            for (j = 0; j < N; j = j + 1) begin : node
+                if (j >= (1 << (i-1))) begin
+                    assign G_stage[i][j] = G_stage[i-1][j] |
+                                          (P_stage[i-1][j] & G_stage[i-1][j-(1<<(i-1))]);
+
+                    assign P_stage[i][j] = P_stage[i-1][j] &
+                                          P_stage[i-1][j-(1<<(i-1))];
+                end else begin
+                    assign G_stage[i][j] = G_stage[i-1][j];
+                    assign P_stage[i][j] = P_stage[i-1][j];
+                end
+            end
+        end
+    endgenerate
+
+    // Carry computation
+    wire [N:0] C;
+    assign C[0] = Cin;
+
+    generate
+        for (j = 0; j < N; j = j + 1) begin : carry
+            assign C[j+1] = G_stage[$clog2(N)][j] |
+                            (P_stage[$clog2(N)][j] & Cin);
+        end
+    endgenerate
+
+    // Sum
+    generate
+        for (j = 0; j < N; j = j + 1) begin : sum
+            assign Sum[j] = P[j] ^ C[j];
+        end
+    endgenerate
+
+    assign Cout = C[N];
+
+endmodule
