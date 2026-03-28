@@ -1,0 +1,26 @@
+module tb_kogge_stone;
+
+    reg [7:0] A, B;
+    reg Cin;
+    wire [7:0] Sum;
+    wire Cout;
+
+    kogge_stone_adder #(8) uut (
+        .A(A),
+        .B(B),
+        .Cin(Cin),
+        .Sum(Sum),
+        .Cout(Cout)
+    );
+
+    initial begin
+        $monitor("A=%b B=%b Cin=%b | Sum=%b Cout=%b", A, B, Cin, Sum, Cout);
+
+        A = 8'b00001111; B = 8'b00000001; Cin = 0; #10;
+        A = 8'b10101010; B = 8'b01010101; Cin = 0; #10;
+        A = 8'b11111111; B = 8'b00000001; Cin = 0; #10;
+
+        $finish;
+    end
+
+endmodule
